@@ -2,7 +2,8 @@ class NotificationService {
   private permission: NotificationPermission = 'default';
 
   constructor() {
-    this.requestPermission();
+    // Don't auto-request permission or show test notification
+    this.permission = Notification.permission;
   }
 
   async requestPermission(): Promise<boolean> {
@@ -14,19 +15,12 @@ class NotificationService {
     if (Notification.permission === 'granted') {
       this.permission = 'granted';
       console.log('Notification permission already granted');
-      // Test notification
-      this.showNotification('Test Notification', { body: 'Notifications are working!' });
       return true;
     }
 
     if (Notification.permission !== 'denied') {
       const permission = await Notification.requestPermission();
       this.permission = permission;
-      console.log('Notification permission result:', permission);
-      if (permission === 'granted') {
-        // Test notification
-        this.showNotification('Test Notification', { body: 'Notifications are now enabled!' });
-      }
       return permission === 'granted';
     }
 
@@ -35,33 +29,52 @@ class NotificationService {
   }
 
   showNotification(title: string, options?: NotificationOptions): void {
-    console.log('Attempting to show notification:', title, 'Permission:', this.permission);
-    
+ 
     if (this.permission !== 'granted') {
       console.log('Notification permission not granted');
       return;
     }
 
-    const notification = new Notification(title, {
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
-      ...options,
-    });
+    try {
+      const notification = new Notification(title, {
+        icon: '/favicon.ico',
+        badge: '/favicon.ico',
+        ...options,
+      });
 
-    notification.onclick = () => {
-      window.focus();
-      notification.close();
-    };
 
-    setTimeout(() => notification.close(), 5000);
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+
+      notification.onerror = (error) => {
+        console.error('Notification error:', error);
+      };
+
+      setTimeout(() => notification.close(), 5000);
+    } catch (error) {
+      console.error('Failed to create notification:', error);
+    }
   }
 
   showMessageNotification(senderName: string, message: string): void {
-    console.log('Showing message notification for:', senderName, message);
-    this.showNotification(`New message from ${senderName}`, {
-      body: message,
-      tag: 'chat-message',
-    });
+        // Request permission if not already granted
+    if (this.permission !== 'granted') {
+      this.requestPermission().then(granted => {
+        if (granted) {
+          this.showNotification(`New message from ${senderName}`, {
+            body: message,
+            tag: 'chat-message',
+          });
+        }
+      });
+    } else {
+      this.showNotification(`New message from ${senderName}`, {
+        body: message,
+        tag: 'chat-message',
+      });
+    }
   }
 }
 

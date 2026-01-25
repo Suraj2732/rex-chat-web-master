@@ -137,7 +137,6 @@ export function useMessagesOptimized(chatId: string | null | undefined, currentU
     
     const lastMessage = messages[messages.length - 1];
     if (lastMessage.senderId !== currentUserId) {
-      console.log('New message from other user:', lastMessage.senderName, lastMessage.content);
       notificationService.showMessageNotification(lastMessage.senderName, lastMessage.content);
     }
   }, [messages, currentUserId, chatId]);
