@@ -11,6 +11,8 @@ import ChatHeader from './ChatHeader';
 import ChatSearch from './ChatSearch';
 import ChatItem from './ChatItem';
 import NoChatText from './NoChatText';
+import ToggleNotificationBar from './ToggleNotificationBar';
+import { ToggleNotification } from './ToggleNotification';
 
 
 
@@ -20,7 +22,7 @@ export default function ChatUserList() {
   const selectedChatId = useSelectedChatId();
   const chatSearchQuery = useChatSearchQuery();
   const { setSelectedChatId, setSelectedChatUser } = useAppActions();
-  const { chats, loading } = useChatsOptimized(currentUser?.uid);
+  const { chats, loading, hasMore, loadingMore, loadMoreChats } = useChatsOptimized(currentUser?.uid);
 
   const getOtherUser = (chat: Chat) => {
     return chat.participantsData.find(p => p.uid !== currentUser?.uid);
@@ -65,9 +67,8 @@ export default function ChatUserList() {
 
       </div>
 
-      <div className="mx-3 my-2 mb-5 bg-[#0f3d2e] px-3 py-2 rounded-lg text-sm">
-        Message notifications are off. <span className=" text-green-300 underline cursor-pointer">Turn on</span>
-      </div>
+     
+     <ToggleNotification/>
 
       <div className="flex-1 overflow-y-auto">
         {loading ? (
@@ -77,32 +78,45 @@ export default function ChatUserList() {
         ) : filteredChats.length === 0 ? (
           <NoChatText />
         ) : (
-          filteredChats.map((chat) => {
-            // Fix read receipt logic: check if the other user has read the last message
-            const otherUser = getOtherUser(chat);
-            const isRead = chat.lastMessage?.readBy && 
-              otherUser && 
-              chat.lastMessage.readBy.includes(otherUser.uid);
+          <>
+            {filteredChats.map((chat) => {
+              // Fix read receipt logic: check if the other user has read the last message
+              const otherUser = getOtherUser(chat);
+              const isRead = chat.lastMessage?.readBy && 
+                otherUser && 
+                chat.lastMessage.readBy.includes(otherUser.uid);
 
-            const unreadCount = currentUser ? chat.unreadCount[currentUser.uid] || 0 : 0;
+              const unreadCount = currentUser ? chat.unreadCount[currentUser.uid] || 0 : 0;
 
-            return (
-              <ChatItem
-                key={chat.id}
-                selectedChatId={selectedChatId}
-                otherUser={otherUser}
-                currentUser={currentUser}
-                chat={chat}
-                unreadCount={unreadCount}
-                isRead={isRead}
-                onClick={() => {
-                  setSelectedChatId(chat.id);
-                  setSelectedChatUser(otherUser || null);
-                }}
-
-              />
-            );
-          })
+              return (
+                <ChatItem
+                  key={chat.id}
+                  selectedChatId={selectedChatId}
+                  otherUser={otherUser}
+                  currentUser={currentUser}
+                  chat={chat}
+                  unreadCount={unreadCount}
+                  isRead={isRead}
+                  onClick={() => {
+                    setSelectedChatId(chat.id);
+                    setSelectedChatUser(otherUser || null);
+                  }}
+                />
+              );
+            })}
+            
+            {hasMore && !chatSearchQuery && (
+              <div className="p-4 text-center">
+                <button
+                  onClick={loadMoreChats}
+                  disabled={loadingMore}
+                  className="text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50"
+                >
+                  {loadingMore ? 'Loading...' : 'Load More Chats'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

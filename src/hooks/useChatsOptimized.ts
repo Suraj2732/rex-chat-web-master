@@ -1,7 +1,7 @@
 // Optimized version of useChats hook
 // Fixes N+1 problem, implements user caching, and efficient listener management
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   collection,
   query,
@@ -12,9 +12,12 @@ import {
   getDoc,
   doc,
   limit,
+  startAfter,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { Chat, User, Message } from '@/types';
+
+const CHATS_PER_PAGE = 20;
 
 // User cache to prevent repeated fetches
 const userCache = new Map<string, { user: User; timestamp: number }>();
@@ -91,7 +94,7 @@ class ChatListenerManager {
       chatsRef,
       where('participants', 'array-contains', userId),
       orderBy('lastMessageTime', 'desc'),
-      limit(100) // Limit to 100 most recent chats
+      limit(CHATS_PER_PAGE) // Limit to 20 chats per page
     );
 
     this.unsubscribe = onSnapshot(
@@ -170,6 +173,9 @@ const chatListenerManager = new ChatListenerManager();
 export function useChatsOptimized(userId: string | undefined) {
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [lastDoc, setLastDoc] = useState<any>(null);
 
   useEffect(() => {
     if (!userId) {
@@ -178,10 +184,14 @@ export function useChatsOptimized(userId: string | undefined) {
     }
 
     setLoading(true);
+    setChats([]);
+    setLastDoc(null);
+    setHasMore(true);
 
     const unsubscribe = chatListenerManager.subscribe(userId, (newChats) => {
       setChats(newChats);
       setLoading(false);
+      setHasMore(newChats.length === CHATS_PER_PAGE);
     });
 
     return () => {
@@ -189,12 +199,101 @@ export function useChatsOptimized(userId: string | undefined) {
     };
   }, [userId]);
 
-  // Memoize sorted chats to prevent unnecessary re-sorts
+  const loadMoreChats = useCallback(async () => {
+    if (!userId || loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    try {
+      const chatsRef = collection(db, 'chats');
+      let q = query(
+        chatsRef,
+        where('participants', 'array-contains', userId),
+        orderBy('lastMessageTime', 'desc'),
+        limit(CHATS_PER_PAGE)
+      );
+
+      if (lastDoc) {
+        q = query(
+          chatsRef,
+          where('participants', 'array-contains', userId),
+          orderBy('lastMessageTime', 'desc'),
+          startAfter(lastDoc),
+          limit(CHATS_PER_PAGE)
+        );
+      }
+
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) {
+        setHasMore(false);
+        setLoadingMore(false);
+        return;
+      }
+
+      const allParticipantIds = new Set<string>();
+      snapshot.docs.forEach((doc) => {
+        const chatData = doc.data();
+        chatData.participants?.forEach((id: string) => allParticipantIds.add(id));
+      });
+
+      const userMap = await batchFetchUsers(Array.from(allParticipantIds));
+      const newChats: Chat[] = [];
+
+      for (const doc of snapshot.docs) {
+        const chatData = doc.data();
+        const participantsData: User[] = chatData.participants
+          .map((id: string) => userMap.get(id))
+          .filter((user: User | undefined): user is User => {
+            return user !== undefined && !user.isDeleted;
+          });
+
+        const otherParticipants = participantsData.filter(user => user.uid !== userId);
+        if (otherParticipants.length === 0) continue;
+
+        const chat: Chat = {
+          id: doc.id,
+          participants: chatData.participants,
+          participantsData,
+          lastMessage: chatData.lastMessage
+            ? {
+                ...chatData.lastMessage,
+                id: chatData.lastMessage.id || '',
+                createdAt: chatData.lastMessage.createdAt?.toDate() || new Date(),
+                readBy: chatData.lastMessage.readBy || [],
+                isEdited: chatData.lastMessage.isEdited || false,
+                isDeleted: chatData.lastMessage.isDeleted || false,
+              } as Message
+            : undefined,
+          lastMessageTime: chatData.lastMessageTime?.toDate() || new Date(),
+          unreadCount: chatData.unreadCount || {},
+          createdAt: chatData.createdAt?.toDate() || new Date(),
+          createdBy: chatData.createdBy,
+        };
+
+        newChats.push(chat);
+      }
+
+      setChats(prev => [...prev, ...newChats]);
+      setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+      setHasMore(snapshot.docs.length === CHATS_PER_PAGE);
+    } catch (error) {
+      console.error('Error loading more chats:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [userId, loadingMore, hasMore, lastDoc]);
+
   const sortedChats = useMemo(() => {
     return [...chats].sort(
       (a, b) => b.lastMessageTime.getTime() - a.lastMessageTime.getTime()
     );
   }, [chats]);
 
-  return { chats: sortedChats, loading };
+  return { 
+    chats: sortedChats, 
+    loading, 
+    hasMore, 
+    loadingMore, 
+    loadMoreChats 
+  };
 }
