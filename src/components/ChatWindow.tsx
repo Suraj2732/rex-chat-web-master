@@ -47,7 +47,7 @@ export default function ChatWindow() {
   const { currentUser } = useAuth();
   const selectedChatId = useSelectedChatId();
   const selectedChatUser = useSelectedChatUser();
-  const { messages, loading, hasMore, loadingOlder, loadOlderMessages } = useMessagesOptimized(selectedChatId);
+  const { messages, loading, hasMore, loadingOlder, loadOlderMessages } = useMessagesOptimized(selectedChatId, currentUser?.uid);
   const typingUsers = useTypingIndicator(selectedChatId, currentUser?.uid);
 
   const [inputMessage, setInputMessage] = useState('');

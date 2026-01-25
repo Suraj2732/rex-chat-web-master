@@ -13,6 +13,7 @@ import {
 import { db } from '@/lib/firebase/config';
 import { Message } from '@/types';
 import { useMessageStore } from '@/store/messageStore';
+import { notificationService } from '@/lib/services/notificationService';
 
 const MESSAGES_PER_PAGE = 50;
 
@@ -20,6 +21,7 @@ const MESSAGES_PER_PAGE = 50;
 class MessageListenerManager {
   private listeners: Map<string, () => void> = new Map();
   private activeChatId: string | null = null;
+  
 
   subscribe(chatId: string, callback: (messages: Message[]) => void): () => void {
     // Unsubscribe from previous chat if switching
@@ -52,7 +54,7 @@ class MessageListenerManager {
             createdAt: doc.data().createdAt?.toDate() || new Date(),
             updatedAt: doc.data().updatedAt?.toDate(),
           }))
-          .reverse() as Message[]; // Reverse to get chronological order
+          .reverse() as Message[];
 
         callback(messagesData);
       },
@@ -87,7 +89,7 @@ class MessageListenerManager {
 // Singleton instance - ensures only one listener per chat (solves N+1 problem)
 const listenerManager = new MessageListenerManager();
 
-export function useMessagesOptimized(chatId: string | null | undefined) {
+export function useMessagesOptimized(chatId: string | null | undefined, currentUserId?: string) {
   const {
     messagesByChat,
     setMessages,
@@ -113,8 +115,6 @@ export function useMessagesOptimized(chatId: string | null | undefined) {
 
     setLoading(chatId, true);
 
-    // Subscribe to real-time updates for the most recent messages
-    // This listener manager ensures only one listener per chat (solves N+1)
     const unsubscribe = listenerManager.subscribe(chatId, (newMessages) => {
       setMessages(chatId, newMessages);
       setLoading(chatId, false);
@@ -130,6 +130,17 @@ export function useMessagesOptimized(chatId: string | null | undefined) {
       }, 1000); // Delay to allow new chat to load first
     };
   }, [chatId, setMessages, setLoading, setHasMore]);
+
+  // Handle notifications for new messages
+  useEffect(() => {
+    if (!chatId || !currentUserId || messages.length === 0) return;
+    
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage.senderId !== currentUserId) {
+      console.log('New message from other user:', lastMessage.senderName, lastMessage.content);
+      notificationService.showMessageNotification(lastMessage.senderName, lastMessage.content);
+    }
+  }, [messages, currentUserId, chatId]);
 
   // Function to load older messages (when scrolling up) - batch fetching
   const loadOlderMessages = useCallback(async () => {
