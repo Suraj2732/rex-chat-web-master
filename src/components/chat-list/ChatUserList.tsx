@@ -6,7 +6,7 @@ import { Chat } from '@/types';
 import UserInfo from './UserInfo';
 import { useChatsOptimized } from '@/hooks/useChatsOptimized';
 import { useState } from 'react';
-import { useSelectedChatId, useAppActions } from '@/store/appStore';
+import { useSelectedChatId, useAppActions, useChatSearchQuery } from '@/store/appStore';
 import ChatHeader from './ChatHeader';
 import ChatSearch from './ChatSearch';
 import ChatItem from './ChatItem';
@@ -18,17 +18,33 @@ export default function ChatUserList() {
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
   const selectedChatId = useSelectedChatId();
+  const chatSearchQuery = useChatSearchQuery();
   const { setSelectedChatId, setSelectedChatUser } = useAppActions();
   const { chats, loading } = useChatsOptimized(currentUser?.uid);
+
+  const getOtherUser = (chat: Chat) => {
+    return chat.participantsData.find(p => p.uid !== currentUser?.uid);
+  };
 
   const unreadChats = chats.filter(chat =>
     currentUser && chat.unreadCount[currentUser.uid] > 0
   );
 
   const displayChats = activeTab === 'unread' ? unreadChats : chats;
-  const getOtherUser = (chat: Chat) => {
-    return chat.participantsData.find(p => p.uid !== currentUser?.uid);
-  };
+  
+  // Filter chats based on search query
+  const filteredChats = displayChats.filter(chat => {
+    if (!chatSearchQuery.trim()) return true;
+    
+    const otherUser = getOtherUser(chat);
+    const searchLower = chatSearchQuery.toLowerCase();
+    
+    return (
+      otherUser?.displayName?.toLowerCase().includes(searchLower) ||
+      otherUser?.email?.toLowerCase().includes(searchLower) ||
+      chat.lastMessage?.content?.toLowerCase().includes(searchLower)
+    );
+  });
 
   return (
     <div className="w-[380px] bg-[#111b21] border-r border-[#222d34] text-white flex flex-col">
@@ -58,10 +74,10 @@ export default function ChatUserList() {
           <div className="flex items-center justify-center h-32">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
-        ) : displayChats.length === 0 ? (
+        ) : filteredChats.length === 0 ? (
           <NoChatText />
         ) : (
-          displayChats.map((chat) => {
+          filteredChats.map((chat) => {
             // Fix read receipt logic: check if the other user has read the last message
             const otherUser = getOtherUser(chat);
             const isRead = chat.lastMessage?.readBy && 

@@ -8,6 +8,7 @@ interface AppState {
   showUserList: boolean;
   loading: boolean;
   searchQuery: string;
+  chatSearchQuery: string;
   
   // Chat Selection
   selectedChatId: string | null;
@@ -18,6 +19,7 @@ interface AppState {
   setShowUserList: (show: boolean) => void;
   setLoading: (loading: boolean) => void;
   setSearchQuery: (query: string) => void;
+  setChatSearchQuery: (query: string) => void;
   setSelectedChatId: (chatId: string | null) => void;
   setSelectedChatUser: (user: User | null) => void;
   
@@ -31,6 +33,7 @@ export const useAppStore = create<AppState>((set) => ({
   showUserList: false,
   loading: false,
   searchQuery: '',
+  chatSearchQuery: '',
   selectedChatId: null,
   selectedChatUser: null,
   
@@ -39,6 +42,7 @@ export const useAppStore = create<AppState>((set) => ({
   setShowUserList: (showUserList) => set({ showUserList }),
   setLoading: (loading) => set({ loading }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
+  setChatSearchQuery: (chatSearchQuery) => set({ chatSearchQuery }),
   setSelectedChatId: (selectedChatId) => set({ selectedChatId }),
   setSelectedChatUser: (selectedChatUser) => set({ selectedChatUser }),
   
@@ -54,6 +58,7 @@ export const useSelectedChatId = () => useAppStore((state) => state.selectedChat
 export const useSelectedChatUser = () => useAppStore((state) => state.selectedChatUser);
 export const useShowUserList = () => useAppStore((state) => state.showUserList);
 export const useSearchQuery = () => useAppStore((state) => state.searchQuery);
+export const useChatSearchQuery = () => useAppStore((state) => state.chatSearchQuery);
 export const useAppLoading = () => useAppStore((state) => state.loading);
 export const useRefresh = () => useAppStore((state) => state.refresh);
 
@@ -64,6 +69,7 @@ export const useAppActions = () => {
   const setShowUserList = useAppStore((state) => state.setShowUserList);
   const setLoading = useAppStore((state) => state.setLoading);
   const setSearchQuery = useAppStore((state) => state.setSearchQuery);
+  const setChatSearchQuery = useAppStore((state) => state.setChatSearchQuery);
   const setSelectedChatId = useAppStore((state) => state.setSelectedChatId);
   const setSelectedChatUser = useAppStore((state) => state.setSelectedChatUser);
   const resetChatSelection = useAppStore((state) => state.resetChatSelection);
@@ -75,6 +81,7 @@ export const useAppActions = () => {
       setShowUserList,
       setLoading,
       setSearchQuery,
+      setChatSearchQuery,
       setSelectedChatId,
       setSelectedChatUser,
       resetChatSelection,
@@ -84,6 +91,7 @@ export const useAppActions = () => {
       setShowUserList,
       setLoading,
       setSearchQuery,
+      setChatSearchQuery,
       setSelectedChatId,
       setSelectedChatUser,
       resetChatSelection,
