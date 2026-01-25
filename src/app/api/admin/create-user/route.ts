@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get new user data from request body
-    const { email, password, displayName, role } = await request.json();
+    const { email, password, displayName, role, photoURL } = await request.json();
 
     // Validate input
     if (!email || !password || !displayName || !role) {
@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
       email,
       password,
       displayName,
+      ...(photoURL && { photoURL }),
     });
 
     // Create user document in Firestore
@@ -69,11 +70,12 @@ export async function POST(request: NextRequest) {
       email,
       displayName,
       role,
-      photoURL: null,
+      photoURL: photoURL || null,
       createdAt: new Date(),
       lastSeen: new Date(),
       isOnline: false,
       isActive: true,
+      isDeleted: false,
     });
 
     return NextResponse.json({

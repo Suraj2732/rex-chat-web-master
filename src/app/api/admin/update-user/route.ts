@@ -28,7 +28,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const { userId, displayName, email, role, isActive, photoURL } = await request.json();
+    const { userId, displayName, email, role, isActive, photoURL, password } = await request.json();
 
     if (!userId) {
       return NextResponse.json(
@@ -42,6 +42,7 @@ export async function PUT(request: NextRequest) {
     if (displayName) updateData.displayName = displayName;
     if (email) updateData.email = email;
     if (photoURL !== undefined) updateData.photoURL = photoURL;
+    if (password) updateData.password = password;
     
     if (Object.keys(updateData).length > 0) {
       await adminAuth.updateUser(userId, updateData);

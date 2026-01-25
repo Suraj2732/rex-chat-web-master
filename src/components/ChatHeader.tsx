@@ -1,5 +1,6 @@
 import { User } from "@/types";
 import { Video, Phone, MoreVertical } from "lucide-react";
+import UserAvatar from "./UserAvatar";
 
 export default function ChatHeader({
   currentUser
@@ -10,9 +11,7 @@ export default function ChatHeader({
   return (
     <div className="flex items-center justify-between px-4 py-3 bg-[#202c33] border-b border-[#2a3942]">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-gray-500">
-          {/* <img src={currentUser?.photoURL} alt={currentUser?.displayName} /> */}
-        </div>
+        {currentUser && <UserAvatar user={currentUser} size="sm" showOnlineStatus={true} />}
         <div>
           <p className="text-sm font-medium">{currentUser?.displayName}</p>
           <p className="text-xs text-gray-200">{currentUser?.isOnline ? "Online" : "Offline"}</p>
@@ -20,8 +19,6 @@ export default function ChatHeader({
       </div>
 
       <div className="flex gap-4 text-[#aebac1]">
-        {/* <Video size={20} />
-        <Phone size={20} /> */}
         <MoreVertical size={20} />
       </div>
     </div>

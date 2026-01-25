@@ -16,7 +16,8 @@ import {
     getAllUsers: async (): Promise<User[]> => {
       try {
         const usersRef = collection(db, 'users');
-        const snapshot = await getDocs(usersRef);
+        const q = query(usersRef, where('isDeleted', '!=', true));
+        const snapshot = await getDocs(q);
         
         return snapshot.docs.map(doc => ({
           ...doc.data(),
@@ -34,7 +35,11 @@ import {
     getEmployees: async (): Promise<User[]> => {
       try {
         const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('role', '==', 'employee'));
+        const q = query(
+          usersRef, 
+          where('role', '==', 'employee'),
+          where('isDeleted', '!=', true)
+        );
         const snapshot = await getDocs(q);
         
         return snapshot.docs.map(doc => ({

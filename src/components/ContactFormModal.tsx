@@ -26,7 +26,7 @@ export default function ContactFormModal({ onClose, editingUser, onSuccess }: Co
   });
   
   const [profileImage, setProfileImage] = useState<File | null>(null);
-  const [profileImagePreview, setProfileImagePreview] = useState<string>('');
+  const [profileImagePreview, setProfileImagePreview] = useState<string>(editingUser?.photoURL || '');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const profileImageRef = useRef<HTMLInputElement>(null);

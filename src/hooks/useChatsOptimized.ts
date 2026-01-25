@@ -45,7 +45,7 @@ async function batchFetchUsers(userIds: string[]): Promise<Map<string, User>> {
     const fetchPromises = batch.map(async (userId) => {
       try {
         const userDoc = await getDoc(doc(db, 'users', userId));
-        if (userDoc.exists()) {
+        if (userDoc.exists() && !userDoc.data().isDeleted) {
           const userData = {
             ...userDoc.data(),
             uid: userDoc.id,
@@ -115,8 +115,14 @@ class ChatListenerManager {
           const participantsData: User[] = chatData.participants
             .map((id: string) => userMap.get(id))
             .filter((user: User | undefined): user is User => {
-              return user !== undefined;
+              return user !== undefined && !user.isDeleted;
             });
+
+          // Skip chats where other participants are deleted
+          const otherParticipants = participantsData.filter(user => user.uid !== userId);
+          if (otherParticipants.length === 0) {
+            continue;
+          }
 
           const chat: Chat = {
             id: doc.id,

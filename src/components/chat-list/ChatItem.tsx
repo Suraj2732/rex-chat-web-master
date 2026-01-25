@@ -1,6 +1,7 @@
 import { Chat, User } from "@/types";
 import { formatTime } from "@/utils";
 import { Check, CheckCheck } from "lucide-react";
+import UserAvatar from "../UserAvatar";
 
 interface ChatListItemProps {
     selectedChatId: string | null;
@@ -24,13 +25,10 @@ export default function ChatItem(
     }: ChatListItemProps
 ) {
     return (
-
         <div onClick={onClick} className={`p-4 hover:bg-[#202c33] cursor-pointer rounded-sm transition-colors ${selectedChatId === chat.id ? 'bg-[#202c33]' : ''
             }`}>
             <div className="flex items-start">
-                <div className="w-12 h-12 rounded-full bg-[#0f3d2e] flex items-center justify-center text-white font-semibold flex-shrink-0">
-                    {otherUser?.displayName?.charAt(0).toUpperCase()}
-                </div>
+                {otherUser && <UserAvatar user={otherUser} showOnlineStatus={true} />}
                 <div className="ml-3 flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                         <h3 className="font-medium text-white truncate">
@@ -63,7 +61,6 @@ export default function ChatItem(
                             </span>
                         )}
                     </div>
-
                 </div>
             </div>
         </div>

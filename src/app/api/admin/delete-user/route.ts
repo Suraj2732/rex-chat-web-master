@@ -45,11 +45,12 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Delete user from Firebase Auth
-    await adminAuth.deleteUser(userId);
-
-    // Delete user document from Firestore
-    await adminDb.collection('users').doc(userId).delete();
+    // Soft delete - mark as deleted instead of hard delete
+    await adminDb.collection('users').doc(userId).update({ 
+      isDeleted: true,
+      isActive: false,
+      updatedAt: new Date()
+    });
 
     return NextResponse.json({
       success: true,
