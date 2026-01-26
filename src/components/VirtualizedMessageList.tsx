@@ -14,6 +14,7 @@ import {
   Trash2,
   Forward,
 } from 'lucide-react';
+import MediaGallery from './MediaGallery';
 
 export interface VirtualizedMessageListHandle {
   scrollToBottom: () => void;
@@ -37,8 +38,9 @@ interface VirtualizedMessageListProps {
 }
 
 interface MessageWithDate {
-  type: 'message' | 'date';
+  type: 'message' | 'date' | 'media-group';
   message?: Message;
+  messages?: Message[];
   date?: Date;
   id: string;
 }
@@ -65,11 +67,26 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
   // Group messages with date separators
   const messagesWithDates: MessageWithDate[] = [];
   let lastDate: Date | null = null;
+  let currentMediaGroup: Message[] = [];
+
+  const flushMediaGroup = () => {
+    if (currentMediaGroup.length > 0) {
+      const groupMessages = [...currentMediaGroup];
+      messagesWithDates.push({
+        type: 'media-group',
+        messages: groupMessages,
+        id: `group-${groupMessages[0].id}`,
+      });
+      currentMediaGroup = [];
+    }
+  };
 
   messages.forEach((message) => {
     const messageDate = new Date(message.createdAt);
+    const isMedia = (message.type === 'image' || message.type === 'video') && !message.isDeleted;
     
     if (!lastDate || !isSameDay(messageDate, lastDate)) {
+      flushMediaGroup();
       messagesWithDates.push({
         type: 'date',
         date: messageDate,
@@ -77,14 +94,28 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
       });
     }
     
-    messagesWithDates.push({
-      type: 'message',
-      message,
-      id: message.id,
-    });
+    if (isMedia) {
+      const prevMessage = currentMediaGroup.length > 0 ? currentMediaGroup[currentMediaGroup.length - 1] : null;
+      
+      if (prevMessage && message.senderId === prevMessage.senderId && 
+          messageDate.getTime() - new Date(prevMessage.createdAt).getTime() < 2 * 60 * 1000) {
+        currentMediaGroup.push(message);
+      } else {
+        flushMediaGroup();
+        currentMediaGroup.push(message);
+      }
+    } else {
+      flushMediaGroup();
+      messagesWithDates.push({
+        type: 'message',
+        message,
+        id: message.id,
+      });
+    }
     
     lastDate = messageDate;
   });
+  flushMediaGroup();
 
   useImperativeHandle(ref, () => ({
     scrollToBottom: () => {
@@ -131,6 +162,114 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
       </div>
     </div>
   );
+
+  const renderMediaGroup = (groupMessages: Message[]) => {
+    if (!groupMessages || groupMessages.length === 0) return null;
+    const firstMsg = groupMessages[0];
+    const lastMsg = groupMessages[groupMessages.length - 1];
+    const isOwn = firstMsg.senderId === currentUserId;
+    
+    const isRead = lastMsg.readBy && lastMsg.readBy.length > 1 && 
+      lastMsg.readBy.some(userId => userId !== lastMsg.senderId);
+
+    const mediaItems = groupMessages.map(m => ({
+      url: m.fileURL || '',
+      type: m.type as 'image' | 'video',
+      name: m.fileName
+    }));
+
+    return (
+      <div
+        key={`group-${firstMsg.id}`}
+        className={`flex ${isOwn ? 'justify-end' : 'justify-start'} px-4 py-2`}
+      >
+        <div
+          className={`relative max-w-md group ${
+            isOwn
+              ? 'bg-[#005c4b] text-white'
+              : 'bg-[#202c33] text-white'
+          } p-1 rounded-lg text-sm rounded-tr-none`}
+        >
+          {firstMsg.forwardedFrom && (
+             <p className="text-xs italic mb-1 opacity-70 px-2 pt-1">
+              Forwarded from {firstMsg.forwardedFrom.senderName}
+            </p>
+          )}
+          
+          <MediaGallery media={mediaItems} />
+          
+          {firstMsg.content && !firstMsg.content.startsWith('Sent ') && (
+             <p className="px-2 py-1 break-words">{firstMsg.content}</p>
+          )}
+
+          <div className="flex items-center justify-end space-x-1 px-2 pb-1">
+            <span className="text-xs opacity-70">
+              {format(lastMsg.createdAt, 'HH:mm')}
+            </span>
+            {isOwn && (
+              <>
+                {isRead ? (
+                  <CheckCheck className="w-4 h-4 text-[#53bdeb]" />
+                ) : (
+                  <Check className="w-4 h-4 opacity-70" />
+                )}
+              </>
+            )}
+          </div>
+          
+           <button
+              onClick={() =>
+                setShowMessageMenu(
+                  showMessageMenu === firstMsg.id ? null : firstMsg.id
+                )
+              }
+              className="absolute right-1 top-1 p-1 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-full"
+            >
+              <ChevronUp size={15} className="text-white" />
+            </button>
+            
+            {showMessageMenu === firstMsg.id && (
+              <div className="absolute right-0 top-8 bg-[#233138] rounded-lg shadow-lg py-1 z-10 min-w-[120px]">
+                <button
+                  onClick={() => {
+                    onReply(firstMsg);
+                    setShowMessageMenu(null);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 hover:bg-[#182229] cursor-pointer w-full text-white"
+                >
+                  <Reply className="w-4 h-4" />
+                  <span>Reply</span>
+                </button>
+                {isOwn && (
+                  <>
+                    <button
+                      onClick={() => {
+                        onDelete(firstMsg);
+                        setShowMessageMenu(null);
+                      }}
+                      className="flex items-center space-x-2 px-4 py-2 hover:bg-[#182229] cursor-pointer w-full text-red-400"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Delete</span>
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => {
+                    onForward(firstMsg);
+                    setShowMessageMenu(null);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 hover:bg-[#182229] cursor-pointer w-full text-white"
+                >
+                  <Forward className="w-4 h-4" />
+                  <span>Forward</span>
+                </button>
+              </div>
+            )}
+        </div>
+      </div>
+    );
+  };
 
   const renderMessage = (message: Message) => {
     if (!message) return null;
@@ -264,6 +403,9 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
   const renderItem = (item: MessageWithDate) => {
     if (item.type === 'date' && item.date) {
       return renderDateSeparator(item.date);
+    }
+    if (item.type === 'media-group' && item.messages) {
+      return renderMediaGroup(item.messages);
     }
     if (item.type === 'message' && item.message) {
       return renderMessage(item.message);
