@@ -13,8 +13,6 @@ import ToggleNotificationBar from './chat-list/ToggleNotificationBar';
 
 export default function ChatLayout() {
    
-    console.log("Chat layout")
-
     return (
         <>
         <ToggleNotificationBar />

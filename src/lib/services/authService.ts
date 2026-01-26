@@ -8,6 +8,7 @@ import {
   import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
   import { auth, db } from '@/lib/firebase/config';
   import { UserRole } from '@/types';
+import toast from 'react-hot-toast';
   
   export const authService = {
     // Sign in existing user
