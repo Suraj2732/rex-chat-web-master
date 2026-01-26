@@ -25,7 +25,14 @@ export interface Chat {
   createdBy: string;
 }
 
-export type MessageType = 'text' | 'image' | 'video' | 'audio' | 'file' | 'voice'; // Add 'voice'
+export type MessageType = 'text' | 'image' | 'video' | 'audio' | 'file' | 'voice';
+
+export interface MediaFile {
+  url: string;
+  name: string;
+  type: 'image' | 'video';
+  size?: number;
+}
 
 export interface Message {
   id: string;
@@ -38,6 +45,7 @@ export interface Message {
   fileName?: string;
   fileSize?: number;
   duration?: number;
+  mediaFiles?: MediaFile[];
   replyTo?: {
     messageId: string;
     content: string;

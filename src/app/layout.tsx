@@ -33,6 +33,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${poppins.variable} ${inter.variable} font-sans bg-[#0b141a] text-white min-h-screen flex flex-col`}>
         <AuthProvider>
+          
           {children}
           <Toaster position="top-right" />
         </AuthProvider>

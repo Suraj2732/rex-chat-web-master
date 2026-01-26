@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback, JSX } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import { Message } from '@/types';
-import { format } from 'date-fns';
+import { format, isToday, isYesterday, isSameDay } from 'date-fns';
 import {
   Check,
   CheckCheck,
@@ -30,6 +30,13 @@ interface VirtualizedMessageListProps {
   setShowMessageMenu: (messageId: string | null) => void;
 }
 
+interface MessageWithDate {
+  type: 'message' | 'date';
+  message?: Message;
+  date?: Date;
+  id: string;
+}
+
 export default function VirtualizedMessageList({
   messages,
   currentUserId,
@@ -48,37 +55,70 @@ export default function VirtualizedMessageList({
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const isLoadingOlderRef = useRef(false);
 
-  // Scroll to bottom when new messages arrive (if already at bottom)
+  // Group messages with date separators
+  const messagesWithDates: MessageWithDate[] = [];
+  let lastDate: Date | null = null;
+
+  messages.forEach((message) => {
+    const messageDate = new Date(message.createdAt);
+    
+    if (!lastDate || !isSameDay(messageDate, lastDate)) {
+      messagesWithDates.push({
+        type: 'date',
+        date: messageDate,
+        id: `date-${messageDate.toISOString()}`,
+      });
+    }
+    
+    messagesWithDates.push({
+      type: 'message',
+      message,
+      id: message.id,
+    });
+    
+    lastDate = messageDate;
+  });
+
   useEffect(() => {
-    if (messages.length > 0 && !loading) {
-      // Small delay to ensure DOM is updated
+    if (messagesWithDates.length > 0 && !loading) {
       setTimeout(() => {
         virtuosoRef.current?.scrollToIndex({
-          index: messages.length - 1,
+          index: messagesWithDates.length - 1,
           behavior: 'smooth',
           align: 'end',
         });
       }, 100);
     }
-  }, [messages.length, loading]);
+  }, [messagesWithDates.length, loading]);
 
-  // Load older messages when scrolling to top
   const startReached = useCallback(() => {
     if (hasMore && !loading && !isLoadingOlderRef.current) {
       isLoadingOlderRef.current = true;
       onLoadOlder();
-      // Reset flag after a delay
       setTimeout(() => {
         isLoadingOlderRef.current = false;
       }, 1000);
     }
   }, [hasMore, loading, onLoadOlder]);
 
+  const formatDateSeparator = (date: Date) => {
+    if (isToday(date)) return 'Today';
+    if (isYesterday(date)) return 'Yesterday';
+    return format(date, 'MMMM d, yyyy');
+  };
+
+  const renderDateSeparator = (date: Date) => (
+    <div className="flex justify-center py-2">
+      <div className="bg-[#182229] px-3 py-1 rounded-full text-xs text-gray-300">
+        {formatDateSeparator(date)}
+      </div>
+    </div>
+  );
+
   const renderMessage = (message: Message) => {
     if (!message) return null;
 
     const isOwn = message.senderId === currentUserId;
-    // Fix read receipt logic: check if other participants have read the message
     const isRead = message.readBy && message.readBy.length > 1 && 
       message.readBy.some(userId => userId !== message.senderId);
 
@@ -204,6 +244,16 @@ export default function VirtualizedMessageList({
     );
   };
 
+  const renderItem = (item: MessageWithDate) => {
+    if (item.type === 'date' && item.date) {
+      return renderDateSeparator(item.date);
+    }
+    if (item.type === 'message' && item.message) {
+      return renderMessage(item.message);
+    }
+    return null;
+  };
+
   if (loading && messages.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -224,9 +274,9 @@ export default function VirtualizedMessageList({
     <Virtuoso
       ref={virtuosoRef}
       style={{ height: '100%', width: '100%' }}
-      data={messages}
-      itemContent={(index, message) => renderMessage(message)}
-      initialTopMostItemIndex={messages.length > 0 ? messages.length - 1 : 0}
+      data={messagesWithDates}
+      itemContent={(index, item) => renderItem(item)}
+      initialTopMostItemIndex={messagesWithDates.length > 0 ? messagesWithDates.length - 1 : 0}
       followOutput="smooth"
       startReached={startReached}
       components={{

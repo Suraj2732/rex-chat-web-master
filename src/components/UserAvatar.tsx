@@ -1,7 +1,7 @@
 import { User } from '@/types';
 
 interface UserAvatarProps {
-  user: User;
+  user: User | null ;
   size?: 'sm' | 'md' | 'lg';
   showOnlineStatus?: boolean;
 }
@@ -15,16 +15,16 @@ export default function UserAvatar({ user, size = 'md', showOnlineStatus = false
 
   return (
     <div className={`relative ${sizeClasses[size]} rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold overflow-hidden flex-shrink-0`}>
-      {user.photoURL ? (
+      {user?.photoURL ? (
         <img
-          src={user.photoURL}
-          alt={user.displayName}
+          src={user?.photoURL}
+          alt={user?.displayName}
           className="w-full h-full object-cover"
         />
       ) : (
-        user.displayName?.charAt(0).toUpperCase()
+        user?.displayName?.charAt(0).toUpperCase()
       )}
-      {showOnlineStatus && user.isOnline && (
+      {showOnlineStatus && user?.isOnline && (
         <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
       )}
     </div>

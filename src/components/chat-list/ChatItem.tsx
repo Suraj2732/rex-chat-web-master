@@ -10,25 +10,36 @@ interface ChatListItemProps {
     otherUser: User | undefined;
     unreadCount: number;
     isRead: boolean | undefined;
-    onClick?:()=>void;
-     
+    onClick?: () => void;
+    onUserClick?: (user: User) => void;
 }
-export default function ChatItem(
-    {
-        selectedChatId,
-        chat,
-        otherUser,
-        unreadCount,
-        isRead,
-        currentUser,
-        onClick
-    }: ChatListItemProps
-) {
+
+export default function ChatItem({
+    selectedChatId,
+    chat,
+    otherUser,
+    unreadCount,
+    isRead,
+    currentUser,
+    onClick,
+    onUserClick
+}: ChatListItemProps) {
+    const handleUserAvatarClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (otherUser && onUserClick) {
+            onUserClick(otherUser);
+        }
+    };
+
     return (
         <div onClick={onClick} className={`p-4 hover:bg-[#202c33] cursor-pointer rounded-sm transition-colors ${selectedChatId === chat.id ? 'bg-[#202c33]' : ''
             }`}>
             <div className="flex items-start">
-                {otherUser && <UserAvatar user={otherUser} showOnlineStatus={true} />}
+                {otherUser && (
+                    <div onClick={handleUserAvatarClick} className="cursor-pointer">
+                        <UserAvatar user={otherUser} showOnlineStatus={true} />
+                    </div>
+                )}
                 <div className="ml-3 flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                         <h3 className="font-medium text-white truncate">

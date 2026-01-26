@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, use } from 'react';
 import {
   collection,
   query,
@@ -125,8 +125,8 @@ export function useMessagesOptimized(chatId: string | null | undefined, currentU
       unsubscribe();
       // Clean up old chats to prevent memory leaks
       setTimeout(() => {
-        const { clearOldChats } = useMessageStore.getState();
-        clearOldChats();
+        const clearChat = useMessageStore.getState().clearOldChats;
+        clearChat();
       }, 1000); // Delay to allow new chat to load first
     };
   }, [chatId, setMessages, setLoading, setHasMore]);

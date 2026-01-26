@@ -31,6 +31,7 @@ interface MessageState {
   setLoadingOlder: (chatId: string, loading: boolean) => void;
   setLoadingNewer: (chatId: string, loading: boolean) => void;
   clearChat: (chatId: string) => void;
+  clearOldChats: () => void;
   getMessages: (chatId: string) => Message[];
 }
 
@@ -201,13 +202,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         loadingNewer: newLoadingNewer,
       };
     }),
-
-  getMessages: (chatId) => {
-    return get().messagesByChat[chatId] || [];
-  },
-
-  // Memory management: Clear old chats to prevent memory leaks
-  clearOldChats: () => {
+    clearOldChats: () => {
     const MAX_CACHED_CHATS = 10;
     const state = get();
     const chatIds = Object.keys(state.messagesByChat);
@@ -230,7 +225,40 @@ export const useMessageStore = create<MessageState>((set, get) => ({
       toRemove.forEach(({ id }) => {
         const { clearChat } = useMessageStore.getState();
         clearChat(id);
-      });
+      }
+      );
     }
   },
+
+  getMessages: (chatId) => {
+    return get().messagesByChat[chatId] || [];
+  },
+
+  // Memory management: Clear old chats to prevent memory leaks
+  // clearOldChats: () => {
+  //   const MAX_CACHED_CHATS = 10;
+  //   const state = get();
+  //   const chatIds = Object.keys(state.messagesByChat);
+
+  //   if (chatIds.length > MAX_CACHED_CHATS) {
+  //     // Keep only the most recent chats (by last message time)
+  //     const chatsWithTimestamps = chatIds
+  //       .map((id) => {
+  //         const messages = state.messagesByChat[id] || [];
+  //         const lastMessageTime =
+  //           messages.length > 0
+  //             ? messages[messages.length - 1]?.createdAt?.getTime() || 0
+  //             : 0;
+  //         return { id, lastMessageTime };
+  //       })
+  //       .sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+
+  //     // Remove oldest chats
+  //     const toRemove = chatsWithTimestamps.slice(MAX_CACHED_CHATS);
+  //     toRemove.forEach(({ id }) => {
+  //       const { clearChat } = useMessageStore.getState();
+  //       clearChat(id);
+  //     });
+  //   }
+  // },
 }));
