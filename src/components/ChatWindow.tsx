@@ -35,7 +35,7 @@ export default function ChatWindow() {
   const selectedChatId = useSelectedChatId();
   const selectedChatUser = useSelectedChatUser();
   const { messages, loading, hasMore, loadingOlder, loadOlderMessages } = useMessagesOptimized(selectedChatId, currentUser?.uid);
-  const typingUsers = useTypingIndicator(selectedChatId, currentUser?.uid);
+  // const typingUsers = useTypingIndicator(selectedChatId, currentUser?.uid);
 
   const [inputMessage, setInputMessage] = useState('');
   const [replyTo, setReplyTo] = useState<Message | null>(null);
@@ -52,26 +52,28 @@ export default function ChatWindow() {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const attachmentMenuRef = useRef<HTMLDivElement>(null);
-  const typingDebounceRef = useRef<NodeJS.Timeout | null>(null);
-  const typingClearRef = useRef<NodeJS.Timeout | null>(null);
+    const attachmentMenuRef = useRef<HTMLDivElement>(null);
+  // const typingClearRef = useRef<NodeJS.Timeout | null>(null);
+  // const lastTypingSentRef = useRef<number>(0);
   const messageListRef = useRef<VirtualizedMessageListHandle>(null);
 
-  useEffect(() => {
-    return () => {
-      if (typingDebounceRef.current) clearTimeout(typingDebounceRef.current);
-      if (typingClearRef.current) clearTimeout(typingClearRef.current);
-      if (currentUser && selectedChatId) {
-        chatServiceOptimized.setTypingIndicator(selectedChatId, currentUser.uid, currentUser.displayName, false);
-      }
-    };
-  }, [selectedChatId, currentUser]);
+  // useEffect(() => {
+  //   return () => {
+  //     if (typingClearRef.current) clearTimeout(typingClearRef.current);
+  //     if (currentUser && selectedChatId) {
+  //       chatServiceOptimized.setTypingIndicator(selectedChatId, currentUser.uid, currentUser.displayName, false);
+  //     }
+  //   };
+  // }, [selectedChatId, currentUser]);
 
   useEffect(() => {
-    if (selectedChatId && currentUser) {
-      chatServiceOptimized.markMessagesAsRead(selectedChatId, currentUser.uid);
+    if (selectedChatId && currentUser && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.senderId !== currentUser.uid && !lastMessage.readBy?.includes(currentUser.uid)) {
+        chatServiceOptimized.markMessagesAsRead(selectedChatId, currentUser.uid);
+      }
     }
-  }, [selectedChatId, currentUser]);
+  }, [selectedChatId, currentUser, messages]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -83,18 +85,24 @@ export default function ChatWindow() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const triggerTyping = useCallback(() => {
-    if (!currentUser || !selectedChatId) return;
-    if (typingDebounceRef.current) clearTimeout(typingDebounceRef.current);
-    if (typingClearRef.current) clearTimeout(typingClearRef.current);
+  //   const triggerTyping = useCallback(() => {
+  //   if (!currentUser || !selectedChatId) return;
+    
+  //   const now = Date.now();
+  //   if (now - lastTypingSentRef.current > 2000) {
+  //     lastTypingSentRef.current = now;
+  //     chatServiceOptimized.setTypingIndicator(selectedChatId, currentUser.uid, currentUser.displayName, true);
+  //   }
 
-    typingDebounceRef.current = setTimeout(() => {
-      chatServiceOptimized.setTypingIndicator(selectedChatId, currentUser.uid, currentUser.displayName, true);
-      typingClearRef.current = setTimeout(() => {
-        chatServiceOptimized.setTypingIndicator(selectedChatId, currentUser.uid, currentUser.displayName, false);
-      }, 3000);
-    }, 500);
-  }, [currentUser, selectedChatId]);
+  //   if (typingClearRef.current) clearTimeout(typingClearRef.current);
+
+  //   typingClearRef.current = setTimeout(() => {
+  //     chatServiceOptimized.setTypingIndicator(selectedChatId, currentUser.uid, currentUser.displayName, false);
+  //     lastTypingSentRef.current = 0;
+  //   }, 3000);
+  // }, [currentUser, selectedChatId]);
+
+
 
   if (!selectedChatId) return <EmptyState />;
 
@@ -169,9 +177,9 @@ export default function ChatWindow() {
       setSelectedFiles([]);
       setUploading(false);
 
-      if (typingDebounceRef.current) clearTimeout(typingDebounceRef.current);
-      if (typingClearRef.current) clearTimeout(typingClearRef.current);
-      chatServiceOptimized.setTypingIndicator(selectedChatId, currentUser.uid, currentUser.displayName, false);
+      // if (typingClearRef.current) clearTimeout(typingClearRef.current);
+      // chatServiceOptimized.setTypingIndicator(selectedChatId, currentUser.uid, currentUser.displayName, false);
+      // lastTypingSentRef.current = 0;
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');
@@ -312,11 +320,11 @@ export default function ChatWindow() {
             </button>
           )}
 
-          {typingUsers.length > 0 && (
+          {/* {typingUsers.length > 0 && (
             <div className="px-4 pb-2">
               <TypingIndicator typingUsers={typingUsers} />
             </div>
-          )}
+          )} */}
         </div>
 
         {isRecordingVoice ? (
@@ -400,7 +408,7 @@ export default function ChatWindow() {
                 value={inputMessage}
                 onChange={(e) => {
                   setInputMessage(e.target.value);
-                  if (e.target.value.trim()) triggerTyping();
+                  // if (e.target.value.trim()) triggerTyping();
                 }}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Type a message..."
