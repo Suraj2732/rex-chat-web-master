@@ -14,8 +14,10 @@ import {
   Trash2,
   Forward,
   CheckCheck as CheckCheckIcon,
+  Copy,
 } from 'lucide-react';
 import MediaGallery from './MediaGallery';
+import toast from 'react-hot-toast';
 
 export interface VirtualizedMessageListHandle {
   scrollToBottom: () => void;
@@ -286,6 +288,19 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
                   <Reply className="w-4 h-4" />
                   <span>Reply</span>
                 </button>
+                {firstMsg.content && (
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(firstMsg.content);
+                      toast.success('Copied to clipboard');
+                      setShowMessageMenu(null);
+                    }}
+                    className="flex items-center space-x-2 px-4 py-2 hover:bg-[#182229] cursor-pointer w-full text-white"
+                  >
+                    <Copy className="w-4 h-4" />
+                    <span>Copy</span>
+                  </button>
+                )}
                 {isOwn  && (
                   <>
                     <button
@@ -432,6 +447,19 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
                 <Reply className="w-4 h-4" />
                 <span>Reply</span>
               </button>
+              {message.content && (
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(message.content);
+                    toast.success('Copied to clipboard');
+                    setShowMessageMenu(null);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 hover:bg-[#182229] cursor-pointer w-full text-white"
+                >
+                  <Copy className="w-4 h-4" />
+                  <span>Copy</span>
+                </button>
+              )}
               {isOwn && (
                 <>
                   <button
