@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMessagesOptimized } from '@/hooks/useMessagesOptimized';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import VirtualizedMessageList, { VirtualizedMessageListHandle } from './VirtualizedMessageList';
-import { chatService } from '@/lib/services/chatService';
 import { chatServiceOptimized } from '@/lib/services/chatServiceOptimized';
 import { fileService } from '@/lib/services/fileService';
 import { Message, User } from '@/types';
@@ -21,7 +20,8 @@ import {
   Download,
   Mic,
   Plus,
-  ChevronDown
+  ChevronDown,
+  Trash2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ChatHeader from './ChatHeader';
@@ -43,11 +43,13 @@ export default function ChatWindow() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [showMessageMenu, setShowMessageMenu] = useState<string | null>(null);
-  const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
+  const [forwardingMessages, setForwardingMessages] = useState<Message[]>([]);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [selectedUserProfile, setSelectedUserProfile] = useState<User | null>(null);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -189,7 +191,7 @@ export default function ChatWindow() {
 
   const handleDeleteMessage = async (message: Message) => {
     if (!currentUser) return;
-    const success = await chatService.deleteMessage(selectedChatId, message.id, currentUser.uid);
+    const success = await chatServiceOptimized.deleteMessage(selectedChatId, message.id, currentUser.uid);
     if (success) {
       toast.success('Message deleted');
     } else {
@@ -280,6 +282,48 @@ export default function ChatWindow() {
     messageListRef.current?.scrollToBottom();
   };
 
+  const handleToggleSelection = (ids: string[]) => {
+    const newSelected = new Set(selectedMessageIds);
+    ids.forEach(id => {
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+    });
+    setSelectedMessageIds(newSelected);
+    if (newSelected.size === 0) {
+        setIsSelectionMode(false);
+    }
+  };
+
+  const handleEnterSelectionMode = (initialId: string) => {
+    setIsSelectionMode(true);
+    setSelectedMessageIds(new Set([initialId]));
+  };
+
+  const handleCancelSelection = () => {
+    setIsSelectionMode(false);
+    setSelectedMessageIds(new Set());
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!currentUser || selectedMessageIds.size === 0) return;
+    if (!confirm(`Delete ${selectedMessageIds.size} messages?`)) return;
+
+    const promises = Array.from(selectedMessageIds).map(id => 
+        chatServiceOptimized.deleteMessage(selectedChatId, id, currentUser.uid)
+    );
+    
+    await Promise.all(promises);
+    handleCancelSelection();
+  };
+
+  const handleForwardSelected = () => {
+    const selectedMsgs = messages.filter(m => selectedMessageIds.has(m.id));
+    setForwardingMessages(selectedMsgs);
+  };
+
   return (
     <main className="h-full relative bg-[#16161659] bg-chat-background bg-repeat">
       <div className="relative z-10 h-full flex flex-col">
@@ -304,16 +348,20 @@ export default function ChatWindow() {
               setInputMessage(message.content);
             }}
             onDelete={handleDeleteMessage}
-            onForward={(message) => setForwardingMessage(message)}
+            onForward={(message) => setForwardingMessages([message])}
             showMessageMenu={showMessageMenu}
             setShowMessageMenu={setShowMessageMenu}
             onAtBottomStateChange={(atBottom) => setShowScrollBottom(!atBottom)}
+            isSelectionMode={isSelectionMode}
+            selectedMessageIds={selectedMessageIds}
+            onToggleSelection={handleToggleSelection}
+            onEnterSelectionMode={handleEnterSelectionMode}
           />
           
           {showScrollBottom && (
             <button
               onClick={handleScrollToBottom}
-              className="absolute bottom-4 right-4 p-2 bg-[#202c33] text-[#8696a0] rounded-full shadow-lg hover:bg-[#2a3942] transition-colors z-20"
+              className="absolute bottom-4 right-4 p-2 bg-[#202c33] text-[#8696a0] rounded-full shadow-lg hover:bg-[#2a3942] transition-colors z-20 cursor-pointer"
               aria-label="Scroll to bottom"
             >
               <ChevronDown className="w-6 h-6" />
@@ -327,6 +375,25 @@ export default function ChatWindow() {
           )} */}
         </div>
 
+        {isSelectionMode ? (
+          <div className="relative px-4 py-3 bg-[#202c33] flex items-center justify-between">
+             <div className="flex items-center space-x-4">
+                <button onClick={handleCancelSelection} className="p-2 hover:bg-gray-700 rounded-full">
+                    <X className="text-[#8696a0]" />
+                </button>
+                <span className="text-white font-medium">{selectedMessageIds.size} selected</span>
+             </div>
+             <div className="flex items-center space-x-4">
+                <button onClick={handleDeleteSelected} className="p-2 hover:bg-gray-700 rounded-full" title="Delete">
+                    <Trash2 className="text-white" />
+                </button>
+                <button onClick={handleForwardSelected} className="p-2 hover:bg-gray-700 rounded-full" title="Forward">
+                    <Send className="text-white transform rotate-45" />
+                </button>
+             </div>
+          </div>
+        ) : (
+        <>
         {isRecordingVoice ? (
           <VoiceRecorder onSend={handleVoiceNoteSend} onCancel={() => setIsRecordingVoice(false)} />
         ) : (
@@ -438,9 +505,11 @@ export default function ChatWindow() {
             </div>
           </div>
         )}
+        </>
+        )}
 
-        {forwardingMessage && (
-          <ForwardMessageModal message={forwardingMessage} onClose={() => setForwardingMessage(null)} />
+        {forwardingMessages.length > 0 && (
+          <ForwardMessageModal messages={forwardingMessages} onClose={() => { setForwardingMessages([]); handleCancelSelection(); }} />
         )}
 
         {selectedUserProfile && (

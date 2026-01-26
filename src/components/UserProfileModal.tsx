@@ -20,7 +20,7 @@ export default function UserProfileModal({ user, isOpen, onClose }: UserProfileM
           <h2 className="text-xl font-semibold">User Profile</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-[#202c33] rounded-full transition-colors"
+            className="p-2 hover:bg-[#202c33] rounded-full transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>

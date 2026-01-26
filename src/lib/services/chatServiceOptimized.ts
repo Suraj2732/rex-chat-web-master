@@ -304,7 +304,7 @@ export const chatServiceOptimized = {
     }
   },
 
-  deleteMessage: async (
+   deleteMessage: async (
     chatId: string,
     messageId: string,
     senderId: string
@@ -322,12 +322,13 @@ export const chatServiceOptimized = {
       const fifteenMinutes = 15 * 60 * 1000;
 
       if (timeDiff > fifteenMinutes || messageData.senderId !== senderId) {
+        // alert("Message is already older than 15 mins")
         return false;
       }
 
       await updateDoc(messageRef, {
         isDeleted: true,
-        content: 'This message was deleted',
+        // content: 'This message was deleted',
         updatedAt: serverTimestamp(),
       });
 
@@ -337,4 +338,82 @@ export const chatServiceOptimized = {
       return false;
     }
   },
+
+  // Forward message
+  forwardMessage: async (
+    message: Message,
+    newChatId: string,
+    senderId: string,
+    senderName: string
+  ): Promise<string | null> => {
+    try {
+      const messagesRef = collection(db, 'chats', newChatId, 'messages');
+
+      const forwardedMessage = {
+        chatId: newChatId,
+        senderId,
+        senderName,
+        content: message.content,
+        type: message.type,
+        fileURL: message.fileURL || null,
+        fileName: message.fileName || null,
+        fileSize: message.fileSize || null,
+        forwardedFrom: {
+          senderName: message.senderName,
+          originalChatId: message.chatId,
+        },
+        readBy: [senderId],
+        createdAt: serverTimestamp(),
+        isEdited: false,
+        isDeleted: false,
+      };
+
+      const docRef = await addDoc(messagesRef, forwardedMessage);
+
+      // Update chat document with denormalized last message
+      const chatRef = doc(db, 'chats', newChatId);
+      const chatDoc = await getDoc(chatRef);
+      const chatData = chatDoc.data();
+
+      // Denormalize lastMessage
+      const lastMessage = {
+        id: docRef.id,
+        chatId: newChatId,
+        senderId,
+        senderName,
+        content: message.content,
+        type: message.type,
+        fileURL: message.fileURL || null,
+        fileName: message.fileName || null,
+        fileSize: message.fileSize || null,
+        readBy: [senderId],
+        createdAt: serverTimestamp(),
+        isEdited: false,
+        isDeleted: false,
+      };
+
+      const updateData: any = {
+        lastMessageTime: serverTimestamp(),
+        lastMessage,
+      };
+
+      // Increment unread count for other participants
+      if (chatData?.participants) {
+        chatData.participants.forEach((participantId: string) => {
+          if (participantId !== senderId) {
+            updateData[`unreadCount.${participantId}`] = increment(1);
+          }
+        });
+      }
+
+      await updateDoc(chatRef, updateData);
+
+      return docRef.id;
+    } catch (error) {
+      console.error('Error forwarding message:', error);
+      return null;
+    }
+  },
+  
+  
 };

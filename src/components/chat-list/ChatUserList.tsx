@@ -23,7 +23,7 @@ export default function ChatUserList() {
   const chatSearchQuery = useChatSearchQuery();
   const { setSelectedChatId, setSelectedChatUser } = useAppActions();
   const { chats, loading, hasMore, loadingMore, loadMoreChats } = useChatsOptimized(currentUser?.uid);
-
+  
   const getOtherUser = (chat: Chat) => {
     return chat.participantsData.find(p => p.uid !== currentUser?.uid);
   };

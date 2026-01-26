@@ -40,7 +40,7 @@ export default function MediaGallery({ media, className = '' }: MediaGalleryProp
   const renderMediaItem = (item: MediaItem, index: number, isOverlay = false) => (
     <div
       key={index}
-      className={`relative cursor-pointer overflow-hidden ${
+      className={`relative cursor-pointer h-[120px] overflow-hidden border border-white ${
         isOverlay ? 'bg-black/50 flex items-center justify-center' : ''
       }`}
       onClick={() => openLightbox(index)}
@@ -64,8 +64,8 @@ export default function MediaGallery({ media, className = '' }: MediaGalleryProp
         </div>
       )}
       {isOverlay && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-white text-2xl font-bold">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+          <span className="text-white text-2xl font-bold media-counter">
             +{media.length - 3}
           </span>
         </div>
@@ -112,10 +112,15 @@ export default function MediaGallery({ media, className = '' }: MediaGalleryProp
     return (
       <div className="grid grid-cols-2 gap-1 w-64 h-64 rounded-lg overflow-hidden">
         {media.slice(0, 3).map((item, index) => (
-          <div key={index} className={index === 0 ? 'row-span-2' : ''}>
+          <div key={index} className={index === 0 ? 'row' : ''}>
             {renderMediaItem(item, index)}
           </div>
         ))}
+        {/* <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-white text-2xl font-bold media-counter">
+            +{media.length - 3}
+          </span>
+        </div> */}
         <div className="relative">
           {renderMediaItem(media[3], 3, true)}
         </div>
@@ -134,7 +139,7 @@ export default function MediaGallery({ media, className = '' }: MediaGalleryProp
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center">
           <button
             onClick={closeLightbox}
-            className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
+            className="absolute top-4 right-4 text-white hover:text-red-300 z-10 cursor-pointer"
           >
             <X className="w-8 h-8" />
           </button>
@@ -143,13 +148,13 @@ export default function MediaGallery({ media, className = '' }: MediaGalleryProp
             <>
               <button
                 onClick={prevMedia}
-                className="absolute left-4 text-white hover:text-gray-300 z-10"
+                className="absolute left-4 text-white hover:text-gray-300 z-10 cursor-pointer"
               >
                 <ChevronLeft className="w-8 h-8" />
               </button>
               <button
                 onClick={nextMedia}
-                className="absolute right-4 text-white hover:text-gray-300 z-10"
+                className="absolute right-4 text-white hover:text-gray-300 z-10 cursor-pointer"
               >
                 <ChevronRight className="w-8 h-8" />
               </button>

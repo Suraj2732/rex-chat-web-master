@@ -12,6 +12,7 @@ export interface User {
   lastSeen: Date;
   isOnline: boolean;
   isActive: boolean;
+  isDeleted:boolean;
 }
 
 export interface Chat {

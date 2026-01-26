@@ -13,6 +13,7 @@ import {
   Edit,
   Trash2,
   Forward,
+  CheckCheck as CheckCheckIcon,
 } from 'lucide-react';
 import MediaGallery from './MediaGallery';
 
@@ -35,6 +36,10 @@ interface VirtualizedMessageListProps {
   showMessageMenu: string | null;
   setShowMessageMenu: (messageId: string | null) => void;
   onAtBottomStateChange?: (atBottom: boolean) => void;
+  isSelectionMode: boolean;
+  selectedMessageIds: Set<string>;
+  onToggleSelection: (ids: string[]) => void;
+  onEnterSelectionMode: (initialId: string) => void;
 }
 
 interface MessageWithDate {
@@ -60,9 +65,32 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
   showMessageMenu,
   setShowMessageMenu,
   onAtBottomStateChange,
+  isSelectionMode,
+  selectedMessageIds,
+  onToggleSelection,
+  onEnterSelectionMode,
 }, ref) => {
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const isLoadingOlderRef = useRef(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (menuRef.current && menuRef.current.contains(target)) {
+        return;
+      }
+      if (target instanceof Element && target.closest('[data-menu-toggle="true"]')) {
+        return;
+      }
+      setShowMessageMenu(null);
+    };
+
+    if (showMessageMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showMessageMenu, setShowMessageMenu]);
 
   // Group messages with date separators
   const messagesWithDates: MessageWithDate[] = [];
@@ -172,6 +200,9 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
     const isRead = lastMsg.readBy && lastMsg.readBy.length > 1 && 
       lastMsg.readBy.some(userId => userId !== lastMsg.senderId);
 
+    const isSelected = groupMessages.every(m => selectedMessageIds.has(m.id));
+    const hasCaption = firstMsg.content && !firstMsg.content.startsWith('Sent ');
+
     const mediaItems = groupMessages.map(m => ({
       url: m.fileURL || '',
       type: m.type as 'image' | 'video',
@@ -181,14 +212,26 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
     return (
       <div
         key={`group-${firstMsg.id}`}
-        className={`flex ${isOwn ? 'justify-end' : 'justify-start'} px-4 py-2`}
+        className={`flex ${isOwn ? 'justify-end' : 'justify-start'} px-4 py-1 ${isSelectionMode ? 'cursor-pointer hover:bg-white/5' : ''}`}
+        onClick={() => {
+          if (isSelectionMode) {
+            onToggleSelection(groupMessages.map(m => m.id));
+          }
+        }}
       >
+        {isSelectionMode && (
+             <div className={`flex items-center justify-center mr-3 ${isOwn ? 'order-last ml-3 mr-0' : ''}`}>
+                <div className={`w-5 h-5 rounded border flex items-center justify-center ${isSelected ? 'bg-[#00a884] border-[#00a884]' : 'border-gray-500'}`}>
+                    {isSelected && <Check size={14} className="text-white" />}
+                </div>
+             </div>
+        )}
         <div
           className={`relative max-w-md group ${
             isOwn
-              ? 'bg-[#005c4b] text-white'
+              ? 'bg-black/60 text-white'
               : 'bg-[#202c33] text-white'
-          } p-1 rounded-lg text-sm rounded-tr-none`}
+          } rounded-lg text-sm shadow-sm ${isOwn ? 'rounded-tr-none' : 'rounded-tl-none'} ${isSelected && isSelectionMode ? 'bg-opacity-80 ring-2 ring-[#00a884]' : ''}`}
         >
           {firstMsg.forwardedFrom && (
              <p className="text-xs italic mb-1 opacity-70 px-2 pt-1">
@@ -196,40 +239,43 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
             </p>
           )}
           
-          <MediaGallery media={mediaItems} />
+          <div className="p-[3px]">
+             <MediaGallery media={mediaItems} />
+          </div>
           
-          {firstMsg.content && !firstMsg.content.startsWith('Sent ') && (
-             <p className="px-2 py-1 break-words">{firstMsg.content}</p>
+          {hasCaption && (
+             <p className="px-2 py-1 break-words text-sm">{firstMsg.content}</p>
           )}
 
-          <div className="flex items-center justify-end space-x-1 px-2 pb-1">
-            <span className="text-xs opacity-70">
+          <div className={`flex items-center justify-end space-x-1 ${hasCaption ? 'px-2 pb-1 relative' : 'absolute bottom-1 right-1 px-1.5 py-0.5 rounded-md bg-black/30 backdrop-blur-[1px]'}`}>
+            <span className={`text-[11px] ${hasCaption ? 'opacity-70' : 'text-white/90'}`}>
               {format(lastMsg.createdAt, 'HH:mm')}
             </span>
             {isOwn && (
               <>
                 {isRead ? (
-                  <CheckCheck className="w-4 h-4 text-[#53bdeb]" />
+                  <CheckCheck className={`w-3.5 h-3.5 ${hasCaption ? 'text-[#53bdeb]' : 'text-[#53bdeb]'}`} />
                 ) : (
-                  <Check className="w-4 h-4 opacity-70" />
+                  <Check className={`w-3.5 h-3.5 ${hasCaption ? 'opacity-70' : 'text-white/90'}`} />
                 )}
               </>
             )}
           </div>
           
-           <button
+           {!isSelectionMode && <button
+              data-menu-toggle="true"
               onClick={() =>
                 setShowMessageMenu(
                   showMessageMenu === firstMsg.id ? null : firstMsg.id
                 )
               }
-              className="absolute right-1 top-1 p-1 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-full"
+              className="absolute right-1 top-1 p-1 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-full z-10"
             >
               <ChevronUp size={15} className="text-white" />
-            </button>
+            </button>}
             
-            {showMessageMenu === firstMsg.id && (
-              <div className="absolute right-0 top-8 bg-[#233138] rounded-lg shadow-lg py-1 z-10 min-w-[120px]">
+            {showMessageMenu === firstMsg.id && !isSelectionMode && (
+              <div ref={menuRef} className="absolute right-0 top-8 bg-[#233138] rounded-lg shadow-lg py-1 z-20 min-w-[120px]">
                 <button
                   onClick={() => {
                     onReply(firstMsg);
@@ -240,7 +286,7 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
                   <Reply className="w-4 h-4" />
                   <span>Reply</span>
                 </button>
-                {isOwn && (
+                {isOwn  && (
                   <>
                     <button
                       onClick={() => {
@@ -264,6 +310,17 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
                   <Forward className="w-4 h-4" />
                   <span>Forward</span>
                 </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEnterSelectionMode(firstMsg.id);
+                    setShowMessageMenu(null);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 hover:bg-[#182229] cursor-pointer w-full text-white"
+                >
+                  <CheckCheckIcon className="w-4 h-4" />
+                  <span>Select</span>
+                </button>
               </div>
             )}
         </div>
@@ -278,17 +335,31 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
     const isRead = message.readBy && message.readBy.length > 1 && 
       message.readBy.some(userId => userId !== message.senderId);
 
+    const isSelected = selectedMessageIds.has(message.id);
+
     return (
       <div
         key={message.id}
-        className={`flex ${isOwn ? 'justify-end' : 'justify-start'} px-4 py-2`}
+        className={`flex ${isOwn ? 'justify-end' : 'justify-start'} px-4 py-2 ${isSelectionMode ? 'cursor-pointer hover:bg-white/5' : ''}`}
+        onClick={() => {
+          if (isSelectionMode) {
+            onToggleSelection([message.id]);
+          }
+        }}
       >
+        {isSelectionMode && (
+             <div className={`flex items-center justify-center mr-3 ${isOwn ? 'order-last ml-3 mr-0' : ''}`}>
+                <div className={`w-5 h-5 rounded border flex items-center justify-center ${isSelected ? 'bg-[#00a884] border-[#00a884]' : 'border-gray-500'}`}>
+                    {isSelected && <Check size={14} className="text-white" />}
+                </div>
+             </div>
+        )}
         <div
           className={`min-w-20 relative max-w-md group ${
             isOwn
               ? 'bg-[#005c4b] text-white'
               : 'bg-[#202c33] text-white'
-          } px-3 py-2 rounded-lg text-sm rounded-tr-none pt-2 pe-4`}
+          } px-3 py-2 rounded-lg text-sm rounded-tr-none pt-2 pe-4 ${isSelected && isSelectionMode ? 'bg-opacity-80 ring-2 ring-[#00a884]' : ''}`}
         >
           {message.replyTo && (
             <div
@@ -308,7 +379,7 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
           )}
 
           {message.isDeleted ? (
-            <p className="italic opacity-70">{message.content}</p>
+            <p className="italic opacity-70">This message was deleted</p>
           ) : (
             <>
               {renderFilePreview(message)}
@@ -334,8 +405,9 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
             )}
           </div>
 
-          {!message.isDeleted && (
+          {!message.isDeleted && !isSelectionMode && (
             <button
+              data-menu-toggle="true"
               onClick={() =>
                 setShowMessageMenu(
                   showMessageMenu === message.id ? null : message.id
@@ -347,8 +419,9 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
             </button>
           )}
 
-          {showMessageMenu === message.id && (
-            <div className="absolute right-0 top-4 bg-[#233138] rounded-lg shadow-lg py-1 z-10 min-w-[120px]">
+          {/* Message Operation Menu */}
+          {showMessageMenu === message.id && !isSelectionMode && (
+            <div ref={menuRef} className={`absolute ${isOwn ? 'right-0' : 'left-0'} top-4 bg-[#233138] rounded-lg shadow-lg py-1 z-10 min-w-[120px]`}>
               <button
                 onClick={() => {
                   onReply(message);
@@ -392,6 +465,17 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, Virtuali
               >
                 <Forward className="w-4 h-4" />
                 <span>Forward</span>
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEnterSelectionMode(message.id);
+                  setShowMessageMenu(null);
+                }}
+                className="flex items-center space-x-2 px-4 py-2 hover:bg-[#182229] cursor-pointer w-full text-white"
+              >
+                <CheckCheckIcon className="w-4 h-4" />
+                <span>Select</span>
               </button>
             </div>
           )}
