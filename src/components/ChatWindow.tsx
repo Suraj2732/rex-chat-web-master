@@ -1,10 +1,10 @@
-'use client';
+// src/components/ChatWindow.tsx
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMessagesOptimized } from '@/hooks/useMessagesOptimized';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
-import VirtualizedMessageList from './VirtualizedMessageList';
+import VirtualizedMessageList, { VirtualizedMessageListHandle } from './VirtualizedMessageList';
 import { chatService } from '@/lib/services/chatService';
 import { chatServiceOptimized } from '@/lib/services/chatServiceOptimized';
 import { fileService } from '@/lib/services/fileService';
@@ -20,7 +20,8 @@ import {
   File as FileIcon,
   Download,
   Mic,
-  Plus
+  Plus,
+  ChevronDown
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ChatHeader from './ChatHeader';
@@ -46,6 +47,7 @@ export default function ChatWindow() {
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [selectedUserProfile, setSelectedUserProfile] = useState<User | null>(null);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -53,6 +55,7 @@ export default function ChatWindow() {
   const attachmentMenuRef = useRef<HTMLDivElement>(null);
   const typingDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const typingClearRef = useRef<NodeJS.Timeout | null>(null);
+  const messageListRef = useRef<VirtualizedMessageListHandle>(null);
 
   useEffect(() => {
     return () => {
@@ -265,6 +268,10 @@ export default function ChatWindow() {
     }
   };
 
+  const handleScrollToBottom = () => {
+    messageListRef.current?.scrollToBottom();
+  };
+
   return (
     <main className="h-full relative bg-[#16161659] bg-chat-background bg-repeat">
       <div className="relative z-10 h-full flex flex-col">
@@ -273,8 +280,9 @@ export default function ChatWindow() {
           onUserClick={(user) => setSelectedUserProfile(user)}
         />
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden relative">
           <VirtualizedMessageList
+            ref={messageListRef}
             messages={messages}
             currentUserId={currentUser?.uid}
             loading={loading}
@@ -291,7 +299,19 @@ export default function ChatWindow() {
             onForward={(message) => setForwardingMessage(message)}
             showMessageMenu={showMessageMenu}
             setShowMessageMenu={setShowMessageMenu}
+            onAtBottomStateChange={(atBottom) => setShowScrollBottom(!atBottom)}
           />
+          
+          {showScrollBottom && (
+            <button
+              onClick={handleScrollToBottom}
+              className="absolute bottom-4 right-4 p-2 bg-[#202c33] text-[#8696a0] rounded-full shadow-lg hover:bg-[#2a3942] transition-colors z-20"
+              aria-label="Scroll to bottom"
+            >
+              <ChevronDown className="w-6 h-6" />
+            </button>
+          )}
+
           {typingUsers.length > 0 && (
             <div className="px-4 pb-2">
               <TypingIndicator typingUsers={typingUsers} />

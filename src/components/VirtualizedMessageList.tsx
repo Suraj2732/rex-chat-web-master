@@ -1,6 +1,7 @@
+// src/components/VirtualizedMessageList.tsx
 'use client';
 
-import { useEffect, useRef, useCallback, JSX } from 'react';
+import { useEffect, useRef, useCallback, JSX, forwardRef, useImperativeHandle } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import { Message } from '@/types';
 import { format, isToday, isYesterday, isSameDay } from 'date-fns';
@@ -13,6 +14,10 @@ import {
   Trash2,
   Forward,
 } from 'lucide-react';
+
+export interface VirtualizedMessageListHandle {
+  scrollToBottom: () => void;
+}
 
 interface VirtualizedMessageListProps {
   messages: Message[];
@@ -28,6 +33,7 @@ interface VirtualizedMessageListProps {
   onForward: (message: Message) => void;
   showMessageMenu: string | null;
   setShowMessageMenu: (messageId: string | null) => void;
+  onAtBottomStateChange?: (atBottom: boolean) => void;
 }
 
 interface MessageWithDate {
@@ -37,7 +43,7 @@ interface MessageWithDate {
   id: string;
 }
 
-export default function VirtualizedMessageList({
+const VirtualizedMessageList = forwardRef<VirtualizedMessageListHandle, VirtualizedMessageListProps>(({
   messages,
   currentUserId,
   loading,
@@ -51,7 +57,8 @@ export default function VirtualizedMessageList({
   onForward,
   showMessageMenu,
   setShowMessageMenu,
-}: VirtualizedMessageListProps) {
+  onAtBottomStateChange,
+}, ref) => {
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const isLoadingOlderRef = useRef(false);
 
@@ -78,6 +85,16 @@ export default function VirtualizedMessageList({
     
     lastDate = messageDate;
   });
+
+  useImperativeHandle(ref, () => ({
+    scrollToBottom: () => {
+      virtuosoRef.current?.scrollToIndex({
+        index: messagesWithDates.length - 1,
+        align: 'end',
+        behavior: 'smooth',
+      });
+    }
+  }), [messagesWithDates.length]);
 
   useEffect(() => {
     if (messagesWithDates.length > 0 && !loading) {
@@ -279,6 +296,7 @@ export default function VirtualizedMessageList({
       initialTopMostItemIndex={messagesWithDates.length > 0 ? messagesWithDates.length - 1 : 0}
       followOutput="smooth"
       startReached={startReached}
+      atBottomStateChange={onAtBottomStateChange}
       components={{
         Header: () =>
           hasMore && loadingOlder ? (
@@ -289,4 +307,8 @@ export default function VirtualizedMessageList({
       }}
     />
   );
-}
+});
+
+VirtualizedMessageList.displayName = 'VirtualizedMessageList';
+
+export default VirtualizedMessageList;
