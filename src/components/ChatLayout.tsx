@@ -12,6 +12,7 @@ import ToggleNotificationBar from './chat-list/ToggleNotificationBar';
 // StateContext removed - using Zustand store now
 
 export default function ChatLayout() {
+    
    
     return (
         <>

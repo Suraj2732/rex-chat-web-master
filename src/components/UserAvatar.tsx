@@ -14,7 +14,8 @@ export default function UserAvatar({ user, size = 'md', showOnlineStatus = false
   };
 
   return (
-    <div className={`relative ${sizeClasses[size]} rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold overflow-hidden flex-shrink-0`}>
+    <div className='relative'>
+    <div className={` ${sizeClasses[size]} rounded-full bg-[#0d3638] flex items-center justify-center text-white font-semibold overflow-hidden flex-shrink-0`}>
       {user?.photoURL ? (
         <img
           src={user?.photoURL}
@@ -24,8 +25,10 @@ export default function UserAvatar({ user, size = 'md', showOnlineStatus = false
       ) : (
         user?.displayName?.charAt(0).toUpperCase()
       )}
-      {showOnlineStatus && user?.isOnline && (
-        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
+     
+    </div>
+    {showOnlineStatus && user?.isOnline && (
+        <span className={`absolute bottom-0 right-1 bg-green-500 rounded-full border-2 border-white ${size === 'sm' ? 'w-2 h-2' : 'w-3 h-3'}`}></span>
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { useAppActions } from "@/store/appStore";
+import { useAppActions, useRefresh } from "@/store/appStore";
 import { chatService } from "@/lib/services/chatService";
 import { User } from "@/types";
 import { Check, Edit, Trash, X } from "lucide-react";
@@ -15,6 +15,7 @@ interface ContactItemProps {
 export default function ContactItem({ user }: ContactItemProps) {
     const { currentUser, firebaseUser } = useAuth();
     const { setSelectedChatId, setSelectedChatUser, setRefresh } = useAppActions();
+    const refresh = useRefresh();
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(false);
     const showActions = currentUser?.role === 'admin';
@@ -56,7 +57,7 @@ export default function ContactItem({ user }: ContactItemProps) {
             }
 
             toast.success(`User ${user.isActive ? 'deactivated' : 'activated'} successfully`);
-            setRefresh(true);
+                setRefresh(!refresh);
         } catch (error: any) {
             toast.error(error.message || 'Failed to toggle user status');
         } finally {
@@ -87,7 +88,7 @@ export default function ContactItem({ user }: ContactItemProps) {
             }
 
             toast.success('User deleted successfully');
-            setRefresh(true);
+                setRefresh(!refresh);
         } catch (error: any) {
             toast.error(error.message || 'Failed to delete user');
         } finally {

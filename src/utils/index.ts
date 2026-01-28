@@ -2,8 +2,8 @@ import { authService } from "@/lib/services/authService";
 import toast from "react-hot-toast";
 import { format } from 'date-fns';
 
-export const handleSignOut = async () => {
-    const { error } = await authService.signOut();
+export const handleSignOut = async (uid:string) => {
+    const { error } = await authService.signOut(uid);
     if (error) {
         toast.error(error);
     }

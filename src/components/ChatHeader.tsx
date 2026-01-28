@@ -14,6 +14,8 @@ export default function ChatHeader({ currentUser, onUserClick }: ChatHeaderProps
     }
   };
 
+  
+
   return (
     <div className="flex items-center justify-between px-4 py-3 bg-[#202c33] border-b border-[#2a3942]">
       <div className="flex items-center gap-3">

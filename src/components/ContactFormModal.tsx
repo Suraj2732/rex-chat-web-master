@@ -6,7 +6,7 @@ import { Camera, Upload, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { fileService } from '@/lib/services/fileService';
-import { useAppActions } from '@/store/appStore';
+import { useAppActions, useRefresh } from '@/store/appStore';
 
 interface ContactFormModalProps {
   onClose: () => void;
@@ -17,6 +17,7 @@ interface ContactFormModalProps {
 export default function ContactFormModal({ onClose, editingUser, onSuccess }: ContactFormModalProps) {
   const { firebaseUser } = useAuth();
   const { setRefresh } = useAppActions();
+  const refresh = useRefresh();
   
   const [formData, setFormData] = useState({
     email: editingUser?.email || '',
@@ -114,7 +115,7 @@ export default function ContactFormModal({ onClose, editingUser, onSuccess }: Co
       }
 
       toast.success(`User ${isEditing ? 'updated' : 'created'} successfully!`);
-      setRefresh(true);
+      setRefresh(!refresh);
       onSuccess?.();
       onClose();
 

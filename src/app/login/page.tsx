@@ -20,7 +20,6 @@ export default function LoginPage() {
 
     try {
       const { user, error } = await authService.signIn(email, password);
-
       if (error) {
         toast.error(error);
       } if (user) {
