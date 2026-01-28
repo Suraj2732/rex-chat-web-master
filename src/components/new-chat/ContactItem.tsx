@@ -56,7 +56,7 @@ export default function ContactItem({ user }: ContactItemProps) {
             }
 
             toast.success(`User ${user.isActive ? 'deactivated' : 'activated'} successfully`);
-            setRefresh(prev => !prev);
+            setRefresh(true);
         } catch (error: any) {
             toast.error(error.message || 'Failed to toggle user status');
         } finally {
@@ -87,7 +87,7 @@ export default function ContactItem({ user }: ContactItemProps) {
             }
 
             toast.success('User deleted successfully');
-            setRefresh(prev => !prev);
+            setRefresh(true);
         } catch (error: any) {
             toast.error(error.message || 'Failed to delete user');
         } finally {

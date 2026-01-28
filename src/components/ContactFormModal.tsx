@@ -114,7 +114,7 @@ export default function ContactFormModal({ onClose, editingUser, onSuccess }: Co
       }
 
       toast.success(`User ${isEditing ? 'updated' : 'created'} successfully!`);
-      setRefresh(prev => !prev);
+      setRefresh(true);
       onSuccess?.();
       onClose();
 

@@ -78,4 +78,7 @@ class NotificationService {
   }
 }
 
-export const notificationService = new NotificationService();
+export const notificationService =
+  typeof window !== 'undefined' && 'Notification' in window
+    ? new NotificationService()
+    : null;

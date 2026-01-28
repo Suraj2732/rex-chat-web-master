@@ -211,7 +211,7 @@ export default function SettingsPage() {
 
               
             </div>
-            <div className="bg-[#111b21] rounded-xl p-6">
+            {/* <div className="bg-[#111b21] rounded-xl p-6">
                 <h3 className="text-lg font-semibold mb-4 flex items-center">
                   <HelpCircle className="w-5 h-5 mr-2 text-[#005c4b]" />
                   Help & Support
@@ -233,7 +233,7 @@ export default function SettingsPage() {
                     <p className="text-sm text-gray-400">Version 1.0.0</p>
                   </button>
                 </div>
-              </div>
+              </div> */}
           </div>
         </div>
       </div>

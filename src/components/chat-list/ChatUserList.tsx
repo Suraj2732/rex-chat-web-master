@@ -11,7 +11,6 @@ import ChatHeader from './ChatHeader';
 import ChatSearch from './ChatSearch';
 import ChatItem from './ChatItem';
 import NoChatText from './NoChatText';
-import ToggleNotificationBar from './ToggleNotificationBar';
 import { ToggleNotification } from './ToggleNotification';
 
 

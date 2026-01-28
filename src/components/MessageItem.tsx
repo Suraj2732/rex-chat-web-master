@@ -9,7 +9,7 @@ import {
     Trash2,
     Forward
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState , JSX } from 'react';
 import type { Message } from '@/types';
 
 interface MessageItemProps {

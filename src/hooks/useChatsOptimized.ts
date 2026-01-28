@@ -184,7 +184,7 @@ export function useChatsOptimized(userId: string | undefined) {
     }
 
     setLoading(true);
-    setChats([]);
+    // setChats([]);
     setLastDoc(null);
     setHasMore(true);
 

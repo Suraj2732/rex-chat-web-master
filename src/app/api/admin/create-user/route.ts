@@ -19,9 +19,13 @@ export async function POST(request: NextRequest) {
     // Verify the ID token and check if user is admin
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const currentUserId = decodedToken.uid;
+    
+    // Debugging currentUserId
+    console.log('currentUserId:', currentUserId);
 
     // Get current user's data to verify admin role
     const currentUserDoc = await adminDb.collection('users').doc(currentUserId).get();
+    console.log('currentUserDoc:', currentUserDoc.exists ? currentUserDoc.data() : 'Document does not exist.');
     const currentUserData = currentUserDoc.data();
 
     if (!currentUserData || currentUserData.role !== 'admin') {

@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -19,12 +20,12 @@ export default function LoginPage() {
 
     try {
       const { user, error } = await authService.signIn(email, password);
-      
+
       if (error) {
         toast.error(error);
       } if (user) {
         toast.success('Logged in successfully');
-  
+
         await new Promise(r => setTimeout(r, 600)); // 600ms
         router.push('/');
       }
@@ -74,15 +75,20 @@ export default function LoginPage() {
               <label className="block text-sm font-medium text-gray-400">
                 Password
               </label>
-              <div className="mt-1">
+              <div className="mt-1 relative">
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 bg-[#2a3942] border border-gray-600 rounded-lg shadow-sm placeholder-gray-500 text-gray-200 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm transition-colors"
                   placeholder="Enter your password"
                   required
                 />
+                <div className='text-end'>
+                <button className="text-xs mt-3 text-blue-400 hover:underline cursor-pointer" type="button" onClick={() => setShowPassword(prev => !prev)}>
+                  {showPassword ? 'Hide Password' : 'Show Password'}
+                </button>
+                </div>
               </div>
             </div>
 

@@ -101,7 +101,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
       setRole('employee');
       setProfileImage(null);
       setProfileImagePreview('');
-      setRefresh(prev => !prev);
+      setRefresh(!refresh);
 
     } catch (error: any) {
       console.error('Error creating user:', error);

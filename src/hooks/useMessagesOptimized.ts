@@ -136,7 +136,7 @@ export function useMessagesOptimized(chatId: string | null | undefined, currentU
     if (!chatId || !currentUserId || messages.length === 0) return;
     
     const lastMessage = messages[messages.length - 1];
-    if (lastMessage.senderId !== currentUserId) {
+    if (lastMessage.senderId !== currentUserId && notificationService) {
       notificationService.showMessageNotification(lastMessage.senderName, lastMessage.content);
     }
   }, [messages, currentUserId, chatId]);

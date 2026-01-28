@@ -65,7 +65,7 @@ export default function ProfilePage() {
               <div className="space-y-6">
                 <div className="flex items-center space-x-6">
                   <div className="relative">
-                    <UserAvatar user={currentUser} size="xl" />
+                    <UserAvatar user={currentUser} size="lg" />
                     {isEditing && (
                       <button className="absolute -bottom-2 -right-2 bg-[#005c4b] p-3 rounded-full hover:bg-[#004a3d] transition-colors">
                         <Camera className="w-5 h-5" />
@@ -187,8 +187,8 @@ export default function ProfilePage() {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400">Last Sign In</span>
                     <span className="font-medium">
-                      {currentUser?.metadata?.lastSignInTime 
-                        ? new Date(currentUser.metadata.lastSignInTime).toLocaleDateString()
+                      {currentUser?.lastSeen 
+                        ? new Date(currentUser.lastSeen).toLocaleDateString()
                         : 'Unknown'
                       }
                     </span>
